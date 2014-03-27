@@ -1,0 +1,41 @@
+﻿body{
+	margin-left:100px;
+	margin-right:100px;
+}
+header>img{
+	display:inline;
+}
+footer{
+	text-align: center;
+}
+footer>img{
+	display:block;
+	margin:0 auto;
+}
+lesson{
+  color:red;
+}
+screen{
+	color:blue;
+}
+
+h1 {
+    font-size: 30px;
+    margin-bottom: 20px;
+    width: auto;
+}
+
+input{
+	margin: 10px 5px;
+	border-radius:5px;
+	min-width: 200px;
+	-moz-box-shadow: 2px 2px 3px #666;
+	-webkit-box-shadow: 2px 2px 3px #666;
+}
+#textInput{
+	overflow:hidden;
+}
+
+#introduction, #summary{
+	min-width: 340px;
+}
