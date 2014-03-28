@@ -21,6 +21,15 @@ function buildOutput(){
 	output += '</course>';
 };
 
+function storeData() {
+		localStorage.setItem('course-name',JSON.stringify($('#course-name').val()));
+		localStorage.setItem('course-info',JSON.stringify($('#course-info').val()));
+		localStorage.setItem('author',JSON.stringify($('#author').val()));
+		localStorage.setItem('introduction',JSON.stringify($('#introduction').val()));
+		localStorage.setItem('content',JSON.stringify($('#content').val()));
+		localStorage.setItem('summary',JSON.stringify($('#summary').val()));
+  };
+
 tinyMCE.init({
 			plugins: ["advlist anchor autoresize charmap code directionality emoticons fullscreen hr nonbreaking paste preview print wordcount searchreplace save table visualchars visualblocks textcolor"],	
 			extended_valid_elements : 'lesson,screen',
@@ -39,9 +48,13 @@ tinyMCE.init({
 			saveAs(blob, cname);
 			},
 			selector: '#content', 
+			mode : 'textareas',
 			forced_root_block : false,
 			nonbreaking_force_tab: true,
 			setup: function(editor) {
+					editor.on('keyup', function(e) {
+						localStorage.setItem('content',JSON.stringify(editor.getContent()));
+					});
 				editor.addButton('Nomad', {
 					type: 'menubutton',
 					text: 'Nomad',
@@ -56,6 +69,8 @@ tinyMCE.init({
 				});
 			}
 			});
-	
 $(document).ready(function(){		
+	$(document).on('keyup', function(){
+		storeData();
+	});
 });
