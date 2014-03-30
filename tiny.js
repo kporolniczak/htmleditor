@@ -6,7 +6,7 @@ function buildOutput(){
 	var cinfo = $('#course-info').val();
 	var author = $('#author').val();
 	var introduction = $('#introduction').val();
-	var content = $('#content').val();
+	var content = prepareContent();
 	var summary = $('#summary').val();
 	
 	output += '<course type="'+type+'">\n';
@@ -15,25 +15,50 @@ function buildOutput(){
 	output += '\t<author_id><![CDATA[' + author + ']]></author_id>\n';
 	output += '\t<introduction><![CDATA[' + introduction + ']]></introduction>\n'
 	output += '\t<base_module>\n';
-	output += '\t'+ content +'\n';
+	output += content;
 	output += '\t</base_module>\n';
 	output += '\t<summary><![CDATA[' + summary + ']]></summary>\n'
 	output += '</course>';
 };
 
+function prepareContent(){
+	var content = $('#content').val();
+	//obcinamy wszystko co jest poza lekcjami
+	content = content.substring(content.indexOf('<lesson>'),content.lastIndexOf('</lesson>')+9);
+	content = content.replace(new RegExp('<lesson><hr /><screen>', "g"), '<lesson>\n<screen>\n');
+	content = content.replace(new RegExp('stitle>', "g"), 'title>');
+	content = content.replace(/(<\/title>)(.*?)(<text>)/g, '</title>\n<text>');
+	content = content.replace(/(<\/screen>)(.*?)(<\/lesson>)/g, '\n</screen>\n</lesson>\n');
+	//wcięcia i CDATA
+	content = content.replace(new RegExp('<lesson>', "g"), '\t\t<lesson>');
+	content = content.replace(new RegExp('</lesson>', "g"), '\t\t</lesson>');
+	content = content.replace(new RegExp('<screen>', "g"), '\t\t\t<screen>');
+	content = content.replace(new RegExp('</screen>', "g"), '\t\t\t</screen>');
+	content = content.replace(new RegExp('<title>', "g"), '\t\t\t\t<title><![CDATA[');
+	content = content.replace(new RegExp('</title>', "g"), ']]></title>');
+	content = content.replace(new RegExp('<text>', "g"), '\t\t\t\t<text><![CDATA[');
+	content = content.replace(new RegExp('</text>', "g"), ']]></text>');
+	return content;
+}
 function storeData() {
 		localStorage.setItem('course-name',JSON.stringify($('#course-name').val()));
 		localStorage.setItem('course-info',JSON.stringify($('#course-info').val()));
 		localStorage.setItem('author',JSON.stringify($('#author').val()));
 		localStorage.setItem('introduction',JSON.stringify($('#introduction').val()));
-		localStorage.setItem('content',JSON.stringify($('#content').val()));
 		localStorage.setItem('summary',JSON.stringify($('#summary').val()));
-  };
+};
+
+function retrieveData() {
+		for (var i = 0; i < localStorage.length; i++){
+			var element = localStorage.key(i);
+			$('#'+element).val(JSON.parse(localStorage.getItem(element)));
+		}
+};
 
 tinyMCE.init({
 			plugins: ["advlist anchor autoresize charmap code directionality emoticons fullscreen hr nonbreaking paste preview print wordcount searchreplace save table visualchars visualblocks textcolor"],	
-			extended_valid_elements : 'lesson,screen',
-			custom_elements: 'lesson,screen,title,text',
+			extended_valid_elements : 'lesson,screen,stitle,text',
+			custom_elements: 'lesson,screens,title,text',
 			toolbar1: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image",
 			toolbar2: " print preview media | forecolor backcolor emoticons | Nomad  | save",			
 			language: 'pl',
@@ -61,16 +86,21 @@ tinyMCE.init({
 					icon: false,
 					menu: [
 						{text: 'Lekcja', onclick: function() {					
-						editor.insertContent('<lesson><hr>---W tym miejscu można dodawać kolejne ekrany---<hr></lesson><br>');}},
+						editor.insertContent('<lesson><hr><br><hr><br></lesson><br>');
+						localStorage.setItem('content',JSON.stringify(editor.getContent()));}},
 						{text: 'Ekran', onclick: function() {
 						var title = prompt("Podaj nazwę ekranu","Nazwa ekranu");
-						editor.insertContent('<screen><title>'+title+'</title><br><text>Zawartość ekranu</text></screen>');}}
+						editor.insertContent('<screen><stitle>'+title+'</stitle><br><text>Zawartość ekranu</text></screen>');
+						localStorage.setItem('content',JSON.stringify(editor.getContent()));}}
 					]
 				});
 			}
 			});
-$(document).ready(function(){		
+$(document).ready(function(){
+	retrieveData();		
+	prepareContent();
 	$(document).on('keyup', function(){
 		storeData();
 	});
+	
 });
