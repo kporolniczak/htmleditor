@@ -70,7 +70,7 @@ tinyMCE.init({
 			buildOutput();			
 			var blob = new Blob([output], {type: "text/plain;charset=utf-8"});
 			var cname = $('#course-name').val();
-			saveAs(blob, cname);
+			saveAs(blob, cname+".xml");
 			},
 			selector: '#content', 
 			mode : 'textareas',
@@ -80,20 +80,25 @@ tinyMCE.init({
 					editor.on('keyup', function(e) {
 						localStorage.setItem('content',JSON.stringify(editor.getContent()));
 					});
-				editor.addButton('Nomad', {
-					type: 'menubutton',
-					text: 'Nomad',
-					icon: false,
-					menu: [
-						{text: 'Lekcja', onclick: function() {					
-						editor.insertContent('<lesson><hr><br><hr><br></lesson><br>');
-						localStorage.setItem('content',JSON.stringify(editor.getContent()));}},
-						{text: 'Ekran', onclick: function() {
-						var title = prompt("Podaj nazwę ekranu","Nazwa ekranu");
-						editor.insertContent('<screen><stitle>'+title+'</stitle><br><text>Zawartość ekranu</text></screen>');
-						localStorage.setItem('content',JSON.stringify(editor.getContent()));}}
-					]
-				});
+					editor.on('BeforeExecCommand', function(e) {
+					if(e.command == "mceNewDocument")
+						$('input').val("");
+						localStorage.clear()
+					});
+					editor.addButton('Nomad', {
+						type: 'menubutton',
+						text: 'Nomad',
+						icon: false,
+						menu: [
+							{text: 'Lekcja', onclick: function() {					
+							editor.insertContent('<lesson><hr><br><hr><br></lesson><br>');
+							localStorage.setItem('content',JSON.stringify(editor.getContent()));}},
+							{text: 'Ekran', onclick: function() {
+							var title = prompt("Podaj nazwę ekranu","Nazwa ekranu");
+							editor.insertContent('<screen><stitle>'+title+'</stitle><br><text>Zawartość ekranu</text></screen>');
+							localStorage.setItem('content',JSON.stringify(editor.getContent()));}}
+						]
+					});
 			}
 			});
 $(document).ready(function(){
@@ -102,5 +107,4 @@ $(document).ready(function(){
 	$(document).on('keyup', function(){
 		storeData();
 	});
-	
 });
