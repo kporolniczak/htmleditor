@@ -49,3 +49,7 @@ input{
 #introduction, #summary{
 	min-width: 340px;
 }
+
+hr{
+display:block;
+}

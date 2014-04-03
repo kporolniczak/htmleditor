@@ -1,5 +1,8 @@
 ﻿var output = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE course SYSTEM "nomadCourse.dtd">\n';
-
+var screenId = 0;
+var lessonId = 'less0';
+var currentEditor;
+	
 function buildOutput(){
 	var type = "remote";
 	var cname = $('#course-name').val();	
@@ -48,19 +51,77 @@ function storeData() {
 		localStorage.setItem('summary',JSON.stringify($('#summary').val()));
 };
 
+function storeScreens() {
+		var screens = JSON.parse(localStorage.getItem(lessonId));
+		var content = currentEditor.getContent();
+		screens[screenId] = content;
+		localStorage.setItem(lessonId,JSON.stringify(screens));
+};
+
 function retrieveData() {
 		for (var i = 0; i < localStorage.length; i++){
 			var element = localStorage.key(i);
 			$('#'+element).val(JSON.parse(localStorage.getItem(element)));
 		}
+		var lessons = JSON.parse(localStorage.getItem('lessons'));
+		var select = document.getElementById("lessons");
+		$('#lessons').children().remove(); 
+		$('#lessons').append('<option></option>')
+		for(var i = 0; i<lessons.length; i++){
+			var option = document.createElement('option');
+			option.text = lessons[i];
+			option.value = "less"+i;
+			select.add(option, 0);
+		}
 };
+
+function retriveScreens(lessonId){
+		
+		var screens = JSON.parse(localStorage.getItem(lessonId));
+		$('#screen-buttons').children().remove(); 
+		if(screens == null) screens=0;
+		for(var i = 0; i<screens.length; i++){
+			$('#screen-buttons').append('<button class="btn-screen" id="'+i+'">'+(i+1)+'</button>');
+		}
+		$('#screen-buttons').append('<button id="add-screen">+</button>');
+		$('#add-screen')
+		.unbind( "click" )
+		.click(function(ev){
+			ev.preventDefault();
+			addScreen(lessonId, screenId+1);
+			});;
+		$('.btn-screen').each(function(ev){
+		$(this).click(function(ev) {
+			screens = JSON.parse(localStorage.getItem(lessonId));
+			ev.preventDefault();
+			screenId=this.id;
+			currentEditor.setContent(screens[screenId])
+		}); 
+	});
+}
+
+function addScreen(lessonId){
+	var screens = JSON.parse(localStorage.getItem(lessonId));
+	if(screens == null) {
+		var i=1;
+		screens = [""];
+		}else{
+	var i = screens.length;
+	screens.push("");
+	}
+	localStorage.setItem(lessonId,JSON.stringify(screens));
+	screenId=i;
+	currentEditor.setContent("");
+	$('#screen-buttons').children().remove(); 
+	retriveScreens(lessonId);
+}
 
 tinyMCE.init({
 			plugins: ["advlist anchor autoresize charmap code directionality emoticons fullscreen hr nonbreaking paste preview print wordcount searchreplace save table visualchars visualblocks textcolor"],	
 			extended_valid_elements : 'lesson,screen,stitle,text',
 			custom_elements: 'lesson,screens,title,text',
 			toolbar1: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image",
-			toolbar2: " print preview media | forecolor backcolor emoticons | Nomad  | save",			
+			toolbar2: " print preview media | forecolor backcolor emoticons | Nomad  | save | example",			
 			language: 'pl',
 			content_css : "style.css",
 			force_br_newlines : true,
@@ -77,13 +138,14 @@ tinyMCE.init({
 			forced_root_block : false,
 			nonbreaking_force_tab: true,
 			setup: function(editor) {
+					currentEditor = editor;
 					editor.on('keyup', function(e) {
-						localStorage.setItem('content',JSON.stringify(editor.getContent()));
+						storeScreens();
 					});
 					editor.on('BeforeExecCommand', function(e) {
 					if(e.command == "mceNewDocument")
 						$('input').val("");
-						localStorage.clear()
+						//localStorage.clear();
 					});
 					editor.addButton('Nomad', {
 						type: 'menubutton',
@@ -99,12 +161,32 @@ tinyMCE.init({
 							localStorage.setItem('content',JSON.stringify(editor.getContent()));}}
 						]
 					});
+					editor.addButton('example', {
+						title : 'example.desc',			
+						onclick : function() {
+						var lessons = ["Lesson 1","Lesson 0"];
+						localStorage.setItem('lessons',JSON.stringify(lessons));
+						lessons = JSON.parse(localStorage.getItem('lessons'));
+						var i = lesson.length;
+						lessons.push("Lesson "+ i);
+						localStorage.setItem('lessons',JSON.stringify(lessons));
+						lessons = JSON.parse(localStorage.getItem('lessons'));
+						}
+					});
 			}
 			});
 $(document).ready(function(){
-	retrieveData();		
-	prepareContent();
+
+	retrieveData();	
 	$(document).on('keyup', function(){
 		storeData();
 	});
+	
+	$('#lessons').change(function() {
+		lessonId = $("#lessons option:selected").val();
+		if(lessonId != null){
+		retriveScreens(lessonId);
+		}
+	});	
+	
 });
