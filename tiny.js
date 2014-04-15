@@ -1,6 +1,6 @@
 ﻿var output = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE course SYSTEM "nomadCourse.dtd">\n';
 var screenId = '0';
-var lessonId;
+var lessonId = 'less0';
 var currentEditor;
 	
 function buildOutput(){
@@ -24,7 +24,7 @@ function buildOutput(){
 	output += '</course>';
 };
 
-function prepareContent(){
+function prepareContentOld(){
 	var content = $('#content').val();
 	//obcinamy wszystko co jest poza lekcjami
 	content = content.substring(content.indexOf('<lesson>'),content.lastIndexOf('</lesson>')+9);
@@ -43,6 +43,22 @@ function prepareContent(){
 	content = content.replace(new RegExp('</text>', "g"), ']]></text>');
 	return content;
 }
+
+function prepareContent(){
+	var lessons = JSON.parse(localStorage.getItem('lessons'));
+	var content = "";
+	for (var i=0; i<lessons.length; i++){
+		content += '\t\t<lesson>\n\t\t\t\t<name><![CDATA[' + lessons[i] + ']]></name>\n';
+		var screens = JSON.parse(localStorage.getItem('less'+i));
+			for(var j=0; j<screens.length; j++){
+				content+='\n\t\t\t\t<screen>\n\t\t\t\t\t' + screens[j] + '\n\t\t\t\t</screen>\n';
+			}
+		content += '\t\t</lesson>\n';
+	}
+	content = content.replace(new RegExp('stitle>', "g"), 'title>');
+	return content;
+}
+
 function storeData() {
 		localStorage.setItem('course-name',JSON.stringify($('#course-name').val()));
 		localStorage.setItem('course-info',JSON.stringify($('#course-info').val()));
@@ -87,6 +103,7 @@ function retriveScreens(lessonId){
 			$('#screen-buttons').append('<button class="btn-screen" id="'+i+'">'+(i+1)+'</button>');
 		}
 		if(lessonId!='no-lesson' && lessonId!='add-lesson'){
+		$('#screen-buttons').prepend('<button id="remove-screen">usuń</button>');
 		$('#screen-buttons').append('<button id="add-screen">+</button>');
 		}
 		$('#add-screen')
@@ -95,12 +112,19 @@ function retriveScreens(lessonId){
 			ev.preventDefault();
 			addScreen(lessonId, screenId+1);
 			});;
+		$('#remove-screen')
+		.unbind( "click" )
+		.click(function(ev){
+			ev.preventDefault();
+			removeScreen(lessonId);
+			});;
 		$('.btn-screen').each(function(ev){
 		$(this).click(function(ev) {
 			screens = JSON.parse(localStorage.getItem(lessonId));
 			ev.preventDefault();
 			screenId=this.id;
 			currentEditor.setContent(screens[screenId]);
+			retriveScreens(lessonId);
 		}); 
 	});
 	$('.btn-screen').click(function () {
@@ -142,17 +166,28 @@ function addScreen(lessonId){
 	}
 	localStorage.setItem(lessonId,JSON.stringify(screens));
 	screenId=i;
-	currentEditor.setContent("");
+	currentEditor.setContent("<stitle>Tutaj wpisz tytuł ekranu</stitle><br><text>A tutaj tekścik</text><br>");
+	storeScreens();
 	$('#screen-buttons').children().remove(); 
+	retriveScreens(lessonId);
+}
+
+function removeScreen(lessonId){
+	screens = JSON.parse(localStorage.getItem(lessonId));
+	currentEditor.setContent("");
+	if (screenId > -1) {
+		screens.splice(screenId, 1);
+	}
+	localStorage.setItem(lessonId,JSON.stringify(screens));
 	retriveScreens(lessonId);
 }
 
 tinyMCE.init({
 			plugins: ["advlist anchor autoresize charmap code directionality emoticons fullscreen hr nonbreaking paste preview print wordcount searchreplace save table visualchars visualblocks textcolor"],	
-			extended_valid_elements : 'tquestion,cquestion,stitle,text,content,answer,answers,feedback',
-			custom_elements: 		  'tquestion,cquestion,stitle,text,content,answer,answers,feedback',
+			extended_valid_elements : 'tquestion,cquestion,stitle,text,content,canswer,wanswer,answers,cfeedback,pfeedback,wfeedback',
+			custom_elements: 		  'tquestion,cquestion,stitle,text,content,canswer,wanswer,answers,cfeedback,pfeedback,wfeedback',
 			toolbar1: "insertfile undo redo | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | print preview media | forecolor backcolor emoticons | save | ",
-			toolbar2: "addTestQuestion | addControlQuestion | addAnswer | addFeedback",			
+			toolbar2: "addQuestion | addAnswer | addFeedback",			
 			language: 'pl',
 			content_css : "style.css",
 			force_br_newlines : true,
@@ -178,29 +213,57 @@ tinyMCE.init({
 						$('input').val("");
 						//localStorage.clear();
 					});
-					editor.addButton('addTestQuestion', {
-						text: 'Pytanie testowe',
+					editor.addButton('addQuestion', {
+						type: 'menubutton',
+						text: 'Wstaw pytanie',
 						icon: false,
-						onclick: function() {					
-							editor.insertContent('<tquestion><hr><br><content>treść pytania</content><br><answers>Tutaj można dodawać odpowiedzi</answers></tquestion>')},
-					});
-					editor.addButton('addControlQuestion', {
-						text: 'Pytanie kontrolne',
-						icon: false,
-						onclick: function() {					
-							editor.insertContent('<cquestion><hr><br><content>treść pytania</content><br>Tutaj można dodawać odpowiedzi</cquestion>')},
-					});
+						menu:
+						[
+								{
+								text: 'Pytanie testowe', onclick: function() {						
+									editor.insertContent('<tquestion><hr><br><content>treść pytania</content><br><answers>Tutaj można dodawać odpowiedzi<br></answers><br><hr></tquestion>')},
+								},
+								{
+								text: 'Pytanie kontrolne', onclick: function() {						
+									editor.insertContent('<cquestion><hr><br><content>treść pytania</content><br><answers>Tutaj można dodawać odpowiedzi<br></answers><br><hr></cquestion>')},
+								}
+							
+						]
+						});						
 					editor.addButton('addAnswer', {
+						type: 'menubutton',
 						text: 'Dodaj odpowiedź',
 						icon: false,
-						onclick: function() {					
-							editor.insertContent('<answer>treść odpowiedzi</answer><br>')},
+						menu: [
+								{
+								text: 'Poprawna odpowiedź', onclick: function() {						
+									editor.insertContent('<canswer>treść odpowiedzi</canswer><br><p class="toRemove">-----------feedback---------------</p><br>')},
+								},
+								{
+								text: 'Błędna odpowiedź', onclick: function() {						
+									editor.insertContent('<wanswer>treść odpowiedzi</wanswer><br><p class="toRemove">-----------feedback---------------</p><br>')},
+								}
+							]
 					});
 					editor.addButton('addFeedback', {
+						type: 'menubutton',
 						text: 'Wstaw feedback',
 						icon: false,
-						onclick: function() {					
-							editor.insertContent('<feedback>treść pytania</feedback><br>')},
+						menu:
+						[
+								{
+								text: 'Odpowiedż poprawna', onclick: function() {						
+									editor.insertContent('<cfeedback>feedback</cfeedback><br>')},
+								},
+								{
+								text: 'Odpowiedż częściowo poprawna', onclick: function() {						
+									editor.insertContent('<pfeedback>feedback</pfeedback><br>')},
+								},
+								{
+								text: 'Odpowiedź błędna', onclick: function() {						
+									editor.insertContent('<wfeedback>feedback</wfeedback><br>')},
+								}
+						]
 					});
 					}
 			});
@@ -222,8 +285,4 @@ $(document).ready(function(){
 			addLesson();
 		}
 	});	
-$('button').click(function () {
-  currentEditor.execCommand('contentReadOnly');
-  $(this).css('border', '1px solid red');
-});	
 });

@@ -12,14 +12,22 @@ footer>img{
 	display:block;
 	margin:0 auto;
 }
-content{
-  color:red;
+
+pfeedback{
+  color:blue;
+}
+
+canswer, cfeedback{
+	color:green;
+}
+
+wanswer, wfeedback{
+	color:red;
 }
 
 stitle{
 	display:block;
 	text-align:center;
-	color:green;
 	text-decoration:underline;
 	font-style:italic;
 	font-weight:bold;
@@ -54,3 +62,7 @@ hr{
 display:block;
 }
 
+.toRemove{
+	text-align:center;
+	color:gray;
+}
